@@ -1,0 +1,313 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.chart-wrapper {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  &:hover {
+    border-color: rgba(200, 255, 0, 0.25);
+  }
+
+  &.animated .line-path {
+    stroke-dasharray: 2000;
+    stroke-dashoffset: 2000;
+    animation: drawLine 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  &.animated .area-path {
+    opacity: 0;
+    animation: fadeIn 1.4s ease forwards 0.5s;
+  }
+
+  &.animated .bar-rect {
+    transform-origin: bottom;
+    transform-box: fill-box;
+    animation: growBar 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0;
+
+    @for $i from 1 through 10 {
+      &:nth-child(#{$i}) { animation-delay: #{($i - 1) * 0.08}s; }
+    }
+  }
+
+  &.animated .pie-slice {
+    animation: fadeIn 0.5s ease forwards;
+    opacity: 0;
+
+    @for $i from 1 through 10 {
+      &:nth-child(#{$i}) { animation-delay: #{($i - 1) * 0.1}s; }
+    }
+  }
+
+  &.animated .data-point {
+    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0;
+    @for $i from 1 through 10 {
+      &:nth-child(#{$i}) { animation-delay: #{0.8 + ($i - 1) * 0.1}s; }
+    }
+  }
+}
+
+// ---- Title ----
+.chart-title {
+  margin-bottom: 20px;
+
+  .title-tag {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+    opacity: 0.7;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+}
+
+// ---- SVG ----
+.chart-svg-container {
+  width: 100%;
+  position: relative;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+// ---- Grid / Axes ----
+.grid-line {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.axis-line {
+  stroke: rgba(255,255,255,0.15);
+  stroke-width: 1;
+}
+
+.axis-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--text-secondary);
+}
+
+// ---- Line Chart ----
+.line-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke-width 0.2s;
+}
+
+.area-path {
+  transition: opacity 0.3s;
+}
+
+.data-point {
+  cursor: pointer;
+  transition: r 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  &.hovered {
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+}
+
+.tooltip-group {
+  pointer-events: none;
+
+  .tooltip-text {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    fill: var(--text-primary);
+    font-weight: 500;
+  }
+}
+
+// ---- Column Chart ----
+.bar-group {
+  cursor: pointer;
+}
+
+.bar-bg {
+  fill: rgba(255,255,255,0.02);
+  transition: fill 0.2s;
+
+  .bar-group:hover & {
+    fill: rgba(255,255,255,0.05);
+  }
+}
+
+.bar-rect {
+  transition: opacity 0.2s, filter 0.2s;
+  opacity: 1;
+
+  &.hovered {
+    opacity: 1;
+  }
+}
+
+.bar-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.2s;
+
+  &.visible {
+    opacity: 1;
+  }
+}
+
+// ---- Pie Chart ----
+.pie-slice-group {
+  cursor: pointer;
+}
+
+.pie-slice {
+  transform-origin: center;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s;
+  opacity: 1;
+
+  &.hovered {
+    transform: scale(1.04);
+  }
+}
+
+.pie-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  fill: #fff;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.donut-hole {
+  pointer-events: none;
+}
+
+.center-total-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.center-total-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+// ---- Empty State ----
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+// ---- Legend ----
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+
+  &.hovered {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+
+  &.dimmed {
+    opacity: 0.35;
+  }
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.legend-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+// ---- Animations ----
+@keyframes drawLine {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes growBar {
+  0% { transform: scaleY(0); opacity: 0; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}

@@ -1,0 +1,205 @@
+<div class="chart-wrapper" [class.animated]="animated()">
+  <!-- Title -->
+  <div class="chart-title">
+    <span class="title-tag">// chart</span>
+    <h2>{{ title }}</h2>
+  </div>
+
+  <!-- Chart SVG Container -->
+  <div class="chart-svg-container">
+
+    <!-- LINE CHART -->
+    <ng-container *ngIf="type === 'line'">
+      <svg [attr.viewBox]="'0 0 ' + svgWidth + ' ' + svgHeight" class="chart-svg" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <!-- Use style attribute for stop-color (SVG presentation attribute, not an HTML property) -->
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" [attr.style]="'stop-color:' + firstColor + ';stop-opacity:0.25'"/>
+            <stop offset="100%" [attr.style]="'stop-color:' + firstColor + ';stop-opacity:0.01'"/>
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Grid lines -->
+        <g class="grid">
+          <line *ngFor="let tick of yAxisTicks"
+            [attr.x1]="padding.left" [attr.y1]="tick.y"
+            [attr.x2]="padding.left + plotWidth" [attr.y2]="tick.y"
+            class="grid-line"/>
+        </g>
+
+        <!-- Y Axis labels -->
+        <g class="axis">
+          <text *ngFor="let tick of yAxisTicks"
+            [attr.x]="padding.left - 10" [attr.y]="tick.y + 4"
+            class="axis-label" text-anchor="end">{{ tick.label }}</text>
+        </g>
+
+        <!-- Area fill -->
+        <path [attr.d]="areaPath" fill="url(#areaGrad)" class="area-path"/>
+
+        <!-- Line path -->
+        <path [attr.d]="linePath" fill="none"
+          [attr.stroke]="firstColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+          class="line-path" filter="url(#glow)"/>
+
+        <!-- Data points -->
+        <g *ngFor="let pt of linePoints; let i = index; trackBy: trackByIndex">
+          <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="20" fill="transparent"
+            (mouseenter)="setHovered(i)" (mouseleave)="clearHovered()"/>
+          <circle [attr.cx]="pt.x" [attr.cy]="pt.y"
+            [attr.r]="isHovered(i) ? 7 : 5"
+            [attr.fill]="pt.item.color"
+            stroke="#0a0a0f" stroke-width="2"
+            class="data-point" [class.hovered]="isHovered(i)"/>
+          <text [attr.x]="pt.x" [attr.y]="padding.top + plotHeight + 22"
+            class="axis-label" text-anchor="middle">{{ pt.item.name }}</text>
+          <g *ngIf="isHovered(i)" class="tooltip-group">
+            <rect [attr.x]="pt.x - 30" [attr.y]="pt.y - 38" width="60" height="26" rx="4"
+              fill="#1a1a24" stroke="#2a2a3a" stroke-width="1"/>
+            <text [attr.x]="pt.x" [attr.y]="pt.y - 20" text-anchor="middle" class="tooltip-text">
+              {{ pt.item.value }}
+            </text>
+          </g>
+        </g>
+
+        <!-- Axes -->
+        <line [attr.x1]="padding.left" [attr.y1]="padding.top"
+          [attr.x2]="padding.left" [attr.y2]="padding.top + plotHeight" class="axis-line"/>
+        <line [attr.x1]="padding.left" [attr.y1]="padding.top + plotHeight"
+          [attr.x2]="padding.left + plotWidth" [attr.y2]="padding.top + plotHeight" class="axis-line"/>
+      </svg>
+    </ng-container>
+
+    <!-- COLUMN CHART -->
+    <ng-container *ngIf="type === 'column'">
+      <svg [attr.viewBox]="'0 0 ' + svgWidth + ' ' + svgHeight" class="chart-svg" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <filter id="bar-glow">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <!-- Bar gradients moved to defs, outside ngFor -->
+          <linearGradient *ngFor="let g of barGradients" [attr.id]="g.id" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" [attr.style]="'stop-color:' + g.color + ';stop-opacity:1'"/>
+            <stop offset="100%" [attr.style]="'stop-color:' + g.color + ';stop-opacity:0.6'"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Grid lines -->
+        <g class="grid">
+          <line *ngFor="let tick of yAxisTicks"
+            [attr.x1]="padding.left" [attr.y1]="tick.y"
+            [attr.x2]="padding.left + plotWidth" [attr.y2]="tick.y"
+            class="grid-line"/>
+        </g>
+
+        <!-- Y Axis labels -->
+        <g class="axis">
+          <text *ngFor="let tick of yAxisTicks"
+            [attr.x]="padding.left - 10" [attr.y]="tick.y + 4"
+            class="axis-label" text-anchor="end">{{ tick.label }}</text>
+        </g>
+
+        <!-- Bars -->
+        <g *ngFor="let bar of columnBars; let i = index; trackBy: trackByIndex"
+          (mouseenter)="setHovered(i)" (mouseleave)="clearHovered()" class="bar-group">
+
+          <rect [attr.x]="bar.x" [attr.y]="padding.top"
+            [attr.width]="bar.width" [attr.height]="plotHeight"
+            class="bar-bg"/>
+
+          <rect [attr.x]="bar.x" [attr.y]="bar.y"
+            [attr.width]="bar.width" [attr.height]="bar.height"
+            [attr.fill]="'url(#' + bar.gradId + ')'"
+            rx="3" ry="3"
+            class="bar-rect" [class.hovered]="isHovered(i)"
+            [style.filter]="isHovered(i) ? 'url(#bar-glow)' : 'none'"/>
+
+          <text [attr.x]="bar.x + bar.width / 2" [attr.y]="bar.y - 8"
+            class="bar-value" text-anchor="middle"
+            [class.visible]="isHovered(i)">{{ bar.item.value }}</text>
+
+          <text [attr.x]="bar.x + bar.width / 2" [attr.y]="padding.top + plotHeight + 22"
+            class="axis-label" text-anchor="middle">{{ bar.item.name }}</text>
+        </g>
+
+        <!-- Axes -->
+        <line [attr.x1]="padding.left" [attr.y1]="padding.top"
+          [attr.x2]="padding.left" [attr.y2]="padding.top + plotHeight" class="axis-line"/>
+        <line [attr.x1]="padding.left" [attr.y1]="padding.top + plotHeight"
+          [attr.x2]="padding.left + plotWidth" [attr.y2]="padding.top + plotHeight" class="axis-line"/>
+      </svg>
+    </ng-container>
+
+    <!-- PIE CHART -->
+    <ng-container *ngIf="type === 'pie'">
+      <svg [attr.viewBox]="'0 0 ' + svgWidth + ' ' + svgHeight" class="chart-svg" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <filter id="pie-shadow">
+            <feDropShadow dx="0" dy="0" stdDeviation="8" flood-opacity="0.4"/>
+          </filter>
+        </defs>
+
+        <g *ngFor="let slice of pieSlices; let i = index; trackBy: trackByIndex"
+          (mouseenter)="setHovered(i)" (mouseleave)="clearHovered()" class="pie-slice-group">
+          <path [attr.d]="slice.path"
+            [attr.fill]="slice.item.color"
+            class="pie-slice" [class.hovered]="isHovered(i)"
+            [style.filter]="isHovered(i) ? 'url(#pie-shadow)' : 'none'"/>
+          <text *ngIf="slice.percentage > 8"
+            [attr.x]="slice.labelX" [attr.y]="slice.labelY + 5"
+            class="pie-label" text-anchor="middle">{{ slice.percentage }}%</text>
+        </g>
+
+        <!-- Donut hole — use computed getter instead of Math.min in template -->
+        <circle [attr.cx]="svgWidth / 2" [attr.cy]="svgHeight / 2"
+          [attr.r]="donutHoleR"
+          fill="#0a0a0f" class="donut-hole"/>
+
+        <!-- Center label (default) -->
+        <ng-container *ngIf="!isAnyHovered()">
+          <text [attr.x]="svgWidth / 2" [attr.y]="svgHeight / 2 - 6"
+            text-anchor="middle" class="center-total-label">Total</text>
+          <text [attr.x]="svgWidth / 2" [attr.y]="svgHeight / 2 + 16"
+            text-anchor="middle" class="center-total-value">{{ total }}</text>
+        </ng-container>
+
+        <!-- Center label (hovered) -->
+        <ng-container *ngIf="isAnyHovered() && pieSlices[hoveredIndex()]">
+          <text [attr.x]="svgWidth / 2" [attr.y]="svgHeight / 2 - 6"
+            text-anchor="middle" class="center-total-label">
+            {{ pieSlices[hoveredIndex()].item.name }}
+          </text>
+          <text [attr.x]="svgWidth / 2" [attr.y]="svgHeight / 2 + 16"
+            text-anchor="middle" class="center-total-value"
+            [attr.fill]="pieSlices[hoveredIndex()].item.color">
+            {{ pieSlices[hoveredIndex()].percentage }}%
+          </text>
+        </ng-container>
+      </svg>
+    </ng-container>
+
+    <!-- Empty State -->
+    <div *ngIf="!series.length" class="empty-state">
+      <span>No data available</span>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend" *ngIf="series.length">
+    <div class="legend-item"
+      *ngFor="let item of series; let i = index; trackBy: trackByIndex"
+      (mouseenter)="setHovered(i)" (mouseleave)="clearHovered()"
+      [class.hovered]="isHovered(i)"
+      [class.dimmed]="isAnyHovered() && !isHovered(i)">
+      <span class="legend-dot" [style.background]="item.color"></span>
+      <span class="legend-name">{{ item.name }}</span>
+      <span class="legend-value">{{ item.value }}</span>
+    </div>
+  </div>
+</div>
